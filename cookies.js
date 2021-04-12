@@ -7,7 +7,6 @@ const utils = require('./uitls')
 // async function setupLoggingOfAllNetworkData(page) {
 //     const cdpSession = await page.target().createCDPSession()
 //     await cdpSession.send('Network.enable')
-//     cdpSession.on('message',)
 //     const cdpRequestDataRaw = {}
 //     const addCDPRequestDataListener = (eventName) => {
 //         cdpSession.on(eventName, request => {
@@ -24,8 +23,8 @@ const utils = require('./uitls')
 
 const getRender = async () => {
     const browser = await puppeteer.launch(
-        Object.assign({ headless: false }, utils.getLaunchParam()))
-    return async url => {
+        Object.assign(utils.getLaunchParam(), { headless: true }))
+    return async (url, allCookies) => {
         const page = await browser.newPage()
         const cdpSession = await page.target().createCDPSession()
         await page.evaluateOnNewDocument(async () => {
@@ -35,12 +34,11 @@ const getRender = async () => {
         });
         await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36")
         const waitPromise = page.waitForResponse(resp => {
-            console.log(resp.url(), resp.status())
             return resp.url().startsWith(url) && resp.status() === 200
         }, 10000)
         await page.goto(url)
         await waitPromise
-        const msg = await cdpSession.send("Network.getCookies", { urls: [url] })
+        const msg = await (allCookies ? cdpSession.send("Network.getAllCookies") : cdpSession.send("Network.getCookies", { urls: [url] }))
         await cdpSession.detach()
         await page.close()
         return msg.cookies
@@ -52,9 +50,9 @@ const serve = async () => {
     const render = await getRender()
     app.use(async (ctx, next) => {
         // url example: https://weibo.com/u/2817218621
-        const url = ctx.query.url
+        const { url, getAllCookies = false } = ctx.query
         console.log((new Date()).toLocaleString(), " => ", url)
-        const cookies = await render(url)
+        const cookies = await render(url, getAllCookies)
         ctx.body = { cookies, cookie_str: cookies.map(cookie => cookie.name + "=" + cookie.value).join(";") }
     })
     app.listen(9001)
