@@ -24,9 +24,13 @@ const utils = require('./uitls')
 const getRender = async () => {
     const browser = await puppeteer.launch(
         Object.assign(utils.getLaunchParam(), { headless: true }))
-    return async (url, allCookies) => {
+    return async (url, allCookies, clearPre) => {
         const page = await browser.newPage()
         const cdpSession = await page.target().createCDPSession()
+        if (clearPre) {
+            await cdpSession.send("Network.clearBrowserCookies")
+            await cdpSession.send("Network.clearBrowserCache")
+        }
         await page.evaluateOnNewDocument(async () => {
             const newProto = navigator.__proto__;
             delete newProto.webdriver;
@@ -50,9 +54,9 @@ const serve = async () => {
     const render = await getRender()
     app.use(async (ctx, next) => {
         // url example: https://weibo.com/u/2817218621
-        const { url, getAllCookies = false } = ctx.query
+        const { url, getAllCookies = false, clearPre = false } = ctx.query
         console.log((new Date()).toLocaleString(), " => ", url)
-        const cookies = await render(url, getAllCookies)
+        const cookies = await render(url, getAllCookies, clearPre)
         ctx.body = { cookies, cookie_str: cookies.map(cookie => cookie.name + "=" + cookie.value).join(";") }
     })
     app.listen(9001)
