@@ -2,10 +2,18 @@ exports.sleep = timeout => {
     return new Promise(resolve => setTimeout(resolve, timeout))
 }
 
-exports.getLaunchParam = () => {
-    if (process.env.ENV === "docker") {
-        return { args: ['--no-sandbox', '--disable-gpu'], headless: true }
-    } else {
-        return { executablePath: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', headless: false }
+exports.getLaunchParam = (originParam) => {
+    if (!originParam.args) {
+        originParam.args = []
     }
+    if (process.env.PROXY_SERVER) {
+        originParam.args.push("--proxy-server=" + process.env.PROXY_SERVER)
+    }
+    if (process.env.ENV === "docker") {
+        originParam.args = originParam.args.concat(['--no-sandbox', '--disable-gpu'])
+        originParam = Object.assign({ headless: true }, originParam)
+    } else {
+        Object.assign({ executablePath: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', headless: false }, originParam)
+    }
+    return originParam
 }

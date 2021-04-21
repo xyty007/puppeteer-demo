@@ -23,7 +23,7 @@ const utils = require('./uitls')
 
 const getRender = async () => {
     const browser = await puppeteer.launch(
-        Object.assign(utils.getLaunchParam(), { headless: true }))
+        Object.assign(utils.getLaunchParam({ headless: true })))
     return async (url, allCookies, clearPre) => {
         const page = await browser.newPage()
         const cdpSession = await page.target().createCDPSession()
