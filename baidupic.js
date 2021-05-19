@@ -6,7 +6,7 @@ const koa = require('koa')
 const utils = require('./uitls')
 
 const picServerReg = new RegExp("t\\d+\\.baidu\\.com/it")
-const picServerReg2 = new RegExp("img\\d+\\.baidu\\.com/it")
+const picServerReg2 = new RegExp("img\\d+\\.baidu\\.com")
 const userAgent = require('./etc').userAgent
 const [singleC, listC, waterfallC] = [
     "sfc-image-content-resutl-tpl-single", "sfc-image-content-result-tpl-weibo", "sfc-image-content-waterfall-item"
@@ -17,7 +17,7 @@ const allSelector = [flowSelector, waterfallSelector].join(", ")
 
 
 const getRender = async () => {
-    const browser = await puppeteer.launch(Object.assign(utils.getLaunchParam({})))
+    const browser = await puppeteer.launch(utils.getLaunchParam({}))
     return async url => {
         const context = await browser.createIncognitoBrowserContext();
         const page = await context.newPage()
@@ -30,7 +30,7 @@ const getRender = async () => {
             delete newProto.webdriver;
             navigator.__proto__ = newProto;
         });
-        await page.setRequestInterception(true);
+        await page.setRequestInterception(true, true);
         page.on('request', req => {
             const url = req.url()
             if (url.endsWith('.png') || url.endsWith('.jpg') || picServerReg.test(url)) {
@@ -106,7 +106,7 @@ const getRender = async () => {
 }
 
 const getRender2 = async () => {
-    const browser = await puppeteer.launch(Object.assign(utils.getLaunchParam({})))
+    const browser = await puppeteer.launch(utils.getLaunchParam({ userDataDir: '/tmp/puppeteer-cache' }))
     return async url => {
         const page = await browser.newPage()
         await page.evaluateOnNewDocument(async () => {
@@ -114,7 +114,7 @@ const getRender2 = async () => {
             delete newProto.webdriver;
             navigator.__proto__ = newProto;
         });
-        await page.setRequestInterception(true);
+        await page.setRequestInterception(true, true);
         page.on('request', req => {
             const url = req.url()
             if (url.endsWith('.png') || url.endsWith('.jpg') || picServerReg.test(url) || picServerReg2.test(url)) {
