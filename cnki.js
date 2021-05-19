@@ -32,7 +32,7 @@ const serve = async () => {
         console.log((new Date()).toLocaleString())
         ctx.body = await r()
     })
-    app.listen(9010)
+    app.listen(9002)
 }
 
 serve()

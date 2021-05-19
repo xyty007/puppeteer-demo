@@ -13,7 +13,7 @@ exports.getLaunchParam = (originParam) => {
         originParam.args = originParam.args.concat(['--no-sandbox', '--disable-gpu'])
         originParam = Object.assign({ headless: true }, originParam)
     } else {
-        Object.assign({ executablePath: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', headless: false }, originParam)
+        originParam = Object.assign({ executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', headless: false }, originParam)
     }
     return originParam
 }
