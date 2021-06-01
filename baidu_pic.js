@@ -16,16 +16,24 @@ const waterfallSelector = "." + waterfallC + ":not([wat-item-data-id='no-img'])"
 const allSelector = [flowSelector, waterfallSelector].join(", ")
 
 const getRender = async () => {
-    const browser = await puppeteer.launch(utils.getLaunchParam({ userDataDir: '/tmp/puppeteer-cache' }))
+    const browser = await puppeteer.launch(utils.getLaunchParam({}, true))
+    const timesBeforeClear = 100
+    let last = timesBeforeClear
     setInterval(() => {
-        browser.pages().then(pages => { console.log("Render: ", pages.length) })
+        browser.pages().then(pages => { console.log("Tab count : ", pages.length) })
     }, 2000)
     return async url => {
-        const context = await browser.createIncognitoBrowserContext().catch(e => { console.log("New context error =>", e) });
-        const page = await context.newPage().catch(e => { console.log("New page error =>", e) })
+        const page = await browser.newPage()
+        if (last-- <= 0) {
+            last = timesBeforeClear
+            console.log("=> time to clear data")
+            const client = await page.target().createCDPSession();
+            await client.send('Network.clearBrowserCookies');
+            await client.send('Network.clearBrowserCache');
+            await client.detach()
+        }
         const timer = setTimeout(async () => {
             await page.close()
-            await context.close()
         }, 900000)
         await page.evaluateOnNewDocument(async () => {
             const newProto = navigator.__proto__;
@@ -102,13 +110,12 @@ const getRender = async () => {
         }, flowSelector, waterfallSelector, singleC, listC).catch(e => console.log("evaluate 3 =>", e))
         clearTimeout(timer)
         await page.close().catch(e => { console.log("May rej 4 =>", e) });
-        await context.close().catch(e => { console.log("May rej 5 =>", e) });
         return res
     }
 }
 
 const getRender2 = async () => {
-    const browser = await puppeteer.launch(utils.getLaunchParam({ userDataDir: '/tmp/puppeteer-cache' }))
+    const browser = await puppeteer.launch(utils.getLaunchParam({ userDataDir: '/tmp/puppeteer-cache2' }))
     return async url => {
         const page = await browser.newPage()
         let html = null
