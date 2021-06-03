@@ -1,5 +1,11 @@
 # puppeteer-demo
 
+## Config
+
+### Set proxy
+
+docker run -e PROXY_SERVER=proxy_host:port
+
 ## Demos
 
 ### cnki.js
