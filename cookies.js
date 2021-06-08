@@ -38,7 +38,8 @@ const getRender = async () => {
         });
         await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36")
         const waitPromise = page.waitForResponse(resp => {
-            return resp.url().startsWith(url) && resp.status() === 200
+            const urlWithoutQuery = decodeURI(url).split("?")[0]
+            return decodeURI(resp.url()).startsWith(urlWithoutQuery) && resp.status() === 200
         }, 10000)
         await page.goto(url)
         await waitPromise

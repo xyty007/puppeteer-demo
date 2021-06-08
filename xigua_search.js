@@ -46,7 +46,7 @@ const getRender = async () => {
             }
         }, 10000)
         try {
-            await page.goto(url)
+            await page.goto(url, { timeout: 20000 })
             const resp = await waitPromise
             const html = await resp.text()
             const data = JSON.parse(reg.exec(html)[1].replace(/undefined/g, "null"))
@@ -54,6 +54,8 @@ const getRender = async () => {
             return { cookies: msg.cookies, data }
         } catch (e) {
             console.log(e)
+            const msg = await cdpSession.send("Network.getCookies", { urls: [url] })
+            return { cookies: msg.cookies }
         } finally {
             await cdpSession.detach()
             await page.close()
