@@ -33,8 +33,7 @@ const getRender = async () => {
         })
         await page.setRequestInterception(true, true)
         page.on('request', req => {
-            // if (url.endsWith('.png') || url.endsWith('.jpg') || picServerReg.test(url)) {
-            if ("image"===req.resourceType()) {
+            if ("image" === req.resourceType()) {
                 req.respond({
                     status: 200,
                     contentType: "image/png",
@@ -43,6 +42,9 @@ const getRender = async () => {
             } else {
                 req.continue()
             }
+        })
+        page.on('dialog', async dialog => {
+            await dialog.dismiss()
         })
         await page.setUserAgent(userAgent.randomSelect())
         const waiter = page.waitForResponse(resp => {
@@ -55,9 +57,14 @@ const getRender = async () => {
                 await cdpSession.send('Network.clearBrowserCookies');
                 await cdpSession.send('Network.clearBrowserCache');
             }
-            await page.goto(url, { waitUntil: ['load', 'domcontentloaded'] })
+            console.log("before goto")
+            await page.goto(url, { waitUntil: ['domcontentloaded'], timeout: 20000 }).catch(e => { console.log("ignore goto exception:", e) })
+            console.log("after goto")
             await waiter
-            for (let i = 0; i < 10; i++) {
+            console.log("got response")
+            let retryCount = 0
+            let formerHeight = 0
+            while (true) {
                 const validResCount = await page.evaluate((allSelector) => {
                     return document.querySelectorAll(allSelector).length
                 }, allSelector)
@@ -72,6 +79,17 @@ const getRender = async () => {
                 })
                 await waitAJAX.catch(e => { console.log("Scroll timeout =>", e) })
                 await utils.sleep(1000)
+
+                const currentHeight = await page.evaluate(() => { return document.body.scrollHeight })
+                if (formerHeight === currentHeight) {
+                    retryCount++
+                    if (retryCount >= 3) {
+                        break
+                    }
+                } else {
+                    formerHeight = currentHeight
+                    retryCount = 0
+                }
             }
 
             return await page.evaluate((flowSelector, waterfallSelector, singleC, listC) => {
