@@ -2,7 +2,8 @@ const puppeteer = require('puppeteer')
 const koa = require('koa')
 const utils = require('./uitls')
 
-const reg = /window\._SSR_HYDRATED_DATA=(.+)<\/script>/
+const fakePic = require('fs').readFileSync("puppeteer.png", "base64")
+const reg = /window\._SSR_HYDRATED_DATA=(.+?)<\/script>/
 const forceClearInterval = 200;
 let intervalLast = forceClearInterval
 
@@ -27,14 +28,22 @@ const getRender = async () => {
         await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36")
         await page.setRequestInterception(true, true);
         page.on('request', req => {
-            const url = req.url()
-            if (url.endsWith('.webp') || url.endsWith('.jpeg')) {
-                req.abort()
-            } else if (url.indexOf("mime_type=video_mp4") >= 0 && /range=\d+-\d+/.test(url)) {
+            const url = req.url().toLowerCase()
+            const resourceType = req.resourceType()
+            if ("image" === resourceType) {
+                req.respond({
+                    status: 200,
+                    contentType: "image/png",
+                    body: Buffer.from(fakePic, 'base64')
+                })
+            } else if (resourceType == 'media' || url.endsWith('.mp4') || url.endsWith('.avi') || url.endsWith('.flv') || url.endsWith('.mov') || url.endsWith('.wmv')) {
                 req.abort()
             } else {
                 req.continue()
             }
+        })
+        page.on('dialog', async dialog => {
+            await dialog.dismiss()
         })
         const waitPromise = page.waitForResponse(async resp => {
             const urlWithoutQuery = url.split("?")[0]
